@@ -47,7 +47,7 @@ public class Controller {
     public static final String TEMPLATE_DEMO_POST = "Controller.procedure(Integer.parseInt(#header|maxCalls#), Integer.parseInt(#header|calls#), Integer.parseInt(#header|fanout#), objectMapper.readValue(#json#, Schema.class))";
 
     @RequestMapping(
-            value = "/v0/demo",
+            value = "/v1/demo",
             method = RequestMethod.POST
     )
     public ResponseEntity<Schema> procedure(

@@ -1,53 +1,53 @@
 !!com.rce.common.structures.ContractEvolution
 methods:
-- endpoint: /v0/demo POST
-  endpointPrior: /v1/demo POST
-  messages:
-  - parameters:
-    - key: header|maxCalls
-      resolution: link=header|maxCalls
-      type: Number
-    - key: header|calls
-      resolution: link=header|calls
-      type: Number
-    - key: header|fanout
-      resolution: link=header|fanout
-      type: Number
-    - key: json|p1_v0
-      resolution: link=json|p1_v1
-      type: String
-    - key: json|p2_v0
-      resolution: link=json|p2_v1
-      type: String
-    - key: json|p3_v0
-      resolution: link=json|p3_v1
-      type: String
-    - key: json|p4_v0
-      resolution: link=json|p4_v1
-      type: String
-    - key: json|p5_v0
-      resolution: link=json|p5_v1
-      type: String
-    type: Request
-    typePrior: Request
-  - parameters:
-    - key: json|p1_v1
-      resolution: link=json|p1_v0
-      type: String
-    - key: json|p2_v1
-      resolution: link=json|p2_v0
-      type: String
-    - key: json|p3_v1
-      resolution: link=json|p3_v0
-      type: String
-    - key: json|p4_v1
-      resolution: link=json|p4_v0
-      type: String
-    - key: json|p5_v1
-      resolution: link=json|p5_v0
-      type: String
-    type: '200'
-    typePrior: '200'
-priorVersion: v1
+  - endpoint: /v1/demo POST
+    endpointPrior: /v0/demo POST
+    messages:
+      - parameters:
+          - key: header|maxCalls
+            resolution: link=header|maxCalls
+            type: Number
+          - key: header|calls
+            resolution: link=header|calls
+            type: Number
+          - key: header|fanout
+            resolution: link=header|fanout
+            type: Number
+          - key: json|p1_v1
+            resolution: link=json|p1_v0
+            type: String
+          - key: json|p2_v1
+            resolution: link=json|p2_v0
+            type: String
+          - key: json|p3_v1
+            resolution: link=json|p3_v0
+            type: String
+          - key: json|p4_v1
+            resolution: link=json|p4_v0
+            type: String
+          - key: json|p5_v1
+            resolution: link=json|p5_v0
+            type: String
+        type: Request
+        typePrior: Request
+      - parameters:
+          - key: json|p1_v0
+            resolution: link=json|p1_v1
+            type: String
+          - key: json|p2_v0
+            resolution: link=json|p2_v1
+            type: String
+          - key: json|p3_v0
+            resolution: link=json|p3_v1
+            type: String
+          - key: json|p4_v0
+            resolution: link=json|p4_v1
+            type: String
+          - key: json|p5_v0
+            resolution: link=json|p5_v1
+            type: String
+        type: '200'
+        typePrior: '200'
+priorVersion: v0
 serviceName: demo
-version: v0
+version: v1
