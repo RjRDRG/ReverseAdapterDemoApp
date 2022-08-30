@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.rce</groupId>
     <artifactId>ReverseAdapterDemoApp</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>v0</version>
     <name>ReverseAdapterDemoApp</name>
     <description>ReverseAdapterDemoApp</description>
     <properties>
