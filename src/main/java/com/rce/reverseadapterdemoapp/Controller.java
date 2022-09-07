@@ -60,11 +60,13 @@ public class Controller {
                 return ResponseEntity.ok(body);
             }
 
+            final int callsMade = calls+1;
+
             List<Mono<ResponseEntity<Schema>>> l = new ArrayList<>(Math.min(fanout, targets.size()));
 
             ThreadLocalRandom.current().ints(0, targets.size()).distinct().limit(fanout).forEach(i -> {
                 URI target = targets.get(i);
-                l.add(send(body, target, maxCalls, calls, fanout));
+                l.add(send(body, target, maxCalls, callsMade, fanout));
             });
 
             return Mono.zip(l, a -> (ResponseEntity<Schema>) a[0]).block();
