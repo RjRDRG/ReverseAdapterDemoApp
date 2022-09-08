@@ -48,10 +48,12 @@ public class Controller {
 
     @RequestMapping(
             value = "/v1/demo",
-            method = RequestMethod.POST
+            method = RequestMethod.POST,
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<Schema> procedure(
-            @RequestHeader("maxCalls") int maxCalls, @RequestHeader("calls") int calls, @RequestHeader("fanout") int fanout,
+            @RequestHeader("maxcalls") int maxCalls, @RequestHeader("calls") int calls, @RequestHeader("fanout") int fanout,
             @RequestBody Schema body
     ) {
         try {
@@ -81,7 +83,7 @@ public class Controller {
                 .method(HttpMethod.POST)
                 .uri(target);
 
-        requestBodySpec.header("maxCalls", String.valueOf(maxCalls));
+        requestBodySpec.header("maxcalls", String.valueOf(maxCalls));
         requestBodySpec.header("calls", String.valueOf(calls));
         requestBodySpec.header("fanout", String.valueOf(fanout));
 
