@@ -58,6 +58,8 @@ public class Controller {
     ) {
         try {
 
+            System.out.println(calls + " " + maxCalls);
+
             if(calls >= maxCalls || targets.isEmpty()) {
                 return ResponseEntity.ok(body);
             }
