@@ -1,15 +1,18 @@
 package com.rce.reverseadapterdemoapp;
 
+import io.netty.channel.ChannelOption;
+import io.netty.channel.epoll.EpollChannelOption;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
 
-import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -17,11 +20,23 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @RestController
 public class Controller {
-    final List<URI> targets;
+    final List<WebClient> targets;
+    final String target_version;
 
     public Controller() {
         String[] apps = Optional.ofNullable(System.getenv().get("TARGET_APPS")).map(a -> a.split(", ")).orElse(new String[0]);
-        String target_version = System.getenv().get("TARGET_VERSION");
+        target_version = System.getenv().get("TARGET_VERSION");
+
+        HttpClient httpClient = HttpClient.create()
+                .responseTimeout(Duration.ofSeconds(30))
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000)
+                .option(ChannelOption.SO_KEEPALIVE, true)
+                .option(EpollChannelOption.TCP_KEEPIDLE, 300)
+                .option(EpollChannelOption.TCP_KEEPINTVL, 60)
+                .option(EpollChannelOption.TCP_KEEPCNT, 8);
+
+        WebClient.Builder builder = WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient));
 
         targets = new ArrayList<>();
 
@@ -32,15 +47,7 @@ public class Controller {
             if (host == null || port == null)
                 continue;
 
-            URI uri = UriComponentsBuilder
-                    .newInstance()
-                    .scheme("http")
-                    .host(host)
-                    .port(port)
-                    .path("/" + target_version.toLowerCase() + "/demo")
-                    .build().toUri();
-
-            targets.add(uri);
+            targets.add(builder.baseUrl("http://" + host + ":" + port).build());
         }
     }
 
@@ -67,8 +74,8 @@ public class Controller {
             List<Mono<ResponseEntity<Schema>>> l = new ArrayList<>(Math.min(fanout, targets.size()));
 
             ThreadLocalRandom.current().ints(0, targets.size()).distinct().limit(fanout).forEach(i -> {
-                URI target = targets.get(i);
-                l.add(send(body, target, maxCalls, callsMade, fanout));
+                WebClient target = targets.get(i);
+                l.add(send(target, body, maxCalls, callsMade, fanout));
             });
 
             return Mono.zip(l, a -> (ResponseEntity<Schema>) a[0]).block();
@@ -78,10 +85,10 @@ public class Controller {
         }
     }
 
-    public Mono<ResponseEntity<Schema>> send(Schema body, URI target, int maxCalls, int calls, int fanout) {
-        WebClient.RequestBodySpec requestBodySpec = WebClient.create()
+    public Mono<ResponseEntity<Schema>> send(WebClient client, Schema body, int maxCalls, int calls, int fanout) {
+        WebClient.RequestBodySpec requestBodySpec = client
                 .method(HttpMethod.POST)
-                .uri(target);
+                .uri("/" + target_version.toLowerCase() + "/demo");
 
         requestBodySpec.header("maxcalls", String.valueOf(maxCalls));
         requestBodySpec.header("calls", String.valueOf(calls));
