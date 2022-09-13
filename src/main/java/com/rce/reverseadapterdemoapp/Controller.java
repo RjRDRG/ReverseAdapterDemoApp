@@ -1,18 +1,13 @@
 package com.rce.reverseadapterdemoapp;
 
-import io.netty.channel.ChannelOption;
-import io.netty.channel.epoll.EpollChannelOption;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-import reactor.netty.http.client.HttpClient;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -27,17 +22,6 @@ public class Controller {
         String[] apps = Optional.ofNullable(System.getenv().get("TARGET_APPS")).map(a -> a.split(", ")).orElse(new String[0]);
         target_version = System.getenv().get("TARGET_VERSION");
 
-        HttpClient httpClient = HttpClient.create()
-                .responseTimeout(Duration.ofSeconds(30))
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30000)
-                .option(ChannelOption.SO_KEEPALIVE, true)
-                .option(EpollChannelOption.TCP_KEEPIDLE, 300)
-                .option(EpollChannelOption.TCP_KEEPINTVL, 60)
-                .option(EpollChannelOption.TCP_KEEPCNT, 8);
-
-        WebClient.Builder builder = WebClient.builder()
-                .clientConnector(new ReactorClientHttpConnector(httpClient));
-
         targets = new ArrayList<>();
 
         for (String app : apps) {
@@ -47,7 +31,7 @@ public class Controller {
             if (host == null || port == null)
                 continue;
 
-            targets.add(builder.baseUrl("http://" + host + ":" + port).build());
+            targets.add(WebClient.create("http://" + host + ":" + port));
         }
     }
 
