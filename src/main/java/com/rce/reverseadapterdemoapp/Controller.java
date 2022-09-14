@@ -57,7 +57,7 @@ public class Controller {
 
             List<Mono<ResponseEntity<Schema>>> l = new ArrayList<>(Math.min(fanout, targets.size()));
 
-            ThreadLocalRandom.current().ints(0, targets.size()).distinct().limit(fanout).forEach(i -> {
+            ThreadLocalRandom.current().ints(0, targets.size()).distinct().limit(Math.min(fanout, targets.size())).forEach(i -> {
                 WebClient target = targets.get(i);
                 l.add(send(target, body, maxCalls, callsMade, fanout));
             });
