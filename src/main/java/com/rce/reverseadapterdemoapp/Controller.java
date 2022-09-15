@@ -16,6 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @RestController
 public class Controller {
     final List<WebClient> targets;
+    final List<WebClient> unversionedTargets;
     final String target_version;
 
     public Controller() {
@@ -23,6 +24,7 @@ public class Controller {
         target_version = System.getenv().get("TARGET_VERSION");
 
         targets = new ArrayList<>();
+        unversionedTargets = new ArrayList<>();
 
         for (String app : apps) {
             String host = System.getenv().get(app.toUpperCase() + "_" + target_version.toUpperCase() + "_SERVICE_HOST");
@@ -32,6 +34,16 @@ public class Controller {
                 continue;
 
             targets.add(WebClient.create("http://" + host + ":" + port));
+        }
+
+        for (String app : apps) {
+            String host = System.getenv().get(app.toUpperCase() + "_SERVICE_HOST");
+            String port = System.getenv().get(app.toUpperCase() + "_SERVICE_PORT");
+
+            if (host == null || port == null)
+                continue;
+
+            unversionedTargets.add(WebClient.create("http://" + host + ":" + port));
         }
     }
 
@@ -69,6 +81,38 @@ public class Controller {
         }
     }
 
+    @RequestMapping(
+            value = "/demo",
+            method = RequestMethod.POST,
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<UnversionedSchema> procedure2(
+            @RequestHeader("maxcalls") int maxCalls, @RequestHeader("calls") int calls, @RequestHeader("fanout") int fanout,
+            @RequestBody UnversionedSchema body
+    ) {
+        try {
+
+            if(calls >= maxCalls || targets.isEmpty()) {
+                return ResponseEntity.ok(body);
+            }
+
+            final int callsMade = calls+1;
+
+            List<Mono<ResponseEntity<UnversionedSchema>>> l = new ArrayList<>(Math.min(fanout, unversionedTargets.size()));
+
+            ThreadLocalRandom.current().ints(0, unversionedTargets.size()).distinct().limit(Math.min(fanout, unversionedTargets.size())).forEach(i -> {
+                WebClient target = unversionedTargets.get(i);
+                l.add(sendUnversioned(target, body, maxCalls, callsMade, fanout));
+            });
+
+            return Mono.zip(l, a -> (ResponseEntity<UnversionedSchema>) a[0]).block();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body(body);
+        }
+    }
+
     public Mono<ResponseEntity<Schema>> send(WebClient client, Schema body, int maxCalls, int calls, int fanout) {
         WebClient.RequestBodySpec requestBodySpec = client
                 .method(HttpMethod.POST)
@@ -84,5 +128,22 @@ public class Controller {
                 .body(BodyInserters.fromValue(body))
                 .retrieve()
                 .toEntity(Schema.class);
+    }
+
+    public Mono<ResponseEntity<UnversionedSchema>> sendUnversioned(WebClient client, UnversionedSchema body, int maxCalls, int calls, int fanout) {
+        WebClient.RequestBodySpec requestBodySpec = client
+                .method(HttpMethod.POST)
+                .uri("/demo");
+
+        requestBodySpec.header("maxcalls", String.valueOf(maxCalls));
+        requestBodySpec.header("calls", String.valueOf(calls));
+        requestBodySpec.header("fanout", String.valueOf(fanout));
+
+        return requestBodySpec
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(body))
+                .retrieve()
+                .toEntity(UnversionedSchema.class);
     }
 }
